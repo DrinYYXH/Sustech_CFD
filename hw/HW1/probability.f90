@@ -6,7 +6,7 @@ integer i,m,n
 ! setting up the variables
 m = 600
 
-
+! loop calculate
 do n=1,300
     y = - m * log(2.0)
     do i=1,n
@@ -17,7 +17,7 @@ do n=1,300
     else
         y = exp(y)
     endif
-    
+    ! output all the data
     write(1,*) n,y,log(y)
 enddo
 
