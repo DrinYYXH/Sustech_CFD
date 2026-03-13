@@ -44,7 +44,7 @@ real*8                   :: dy,pi,t,Tend
 
       t = t +dt
 ! print out solutions
-      if(mod(it,NTime).eq.0) then
+      if(mod(it,Ntime).eq.0) then
 ! analytical solution with the same N
 ! assume N is even
          do j = 1,N+1

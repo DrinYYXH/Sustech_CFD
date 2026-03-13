@@ -46,23 +46,41 @@ integer,parameter      :: N=8, Ntime=64
 real*8,parameter       ::  dt = 0.032d0
 
 real*8,parameter       :: u0=1.0d0, aL=1.0d0, anu=0.1
-! u0 maximum velocity,aL channel half width,anu kinematic viscosity
-! body force is then  g = 2*nu*u0/al^2
-!real*8, dimension(1:N+1) :: uold, u, uana  [uana is not used, can be removed.]
-real*8, dimension(1:N+1) :: uold, u
-real*8                   ::theta0, theta1, theory1,ss,ycc,CFL
-integer                  :: j,it,nsteps,k
-real*8                   :: dy,pi,t,Tend
 ```
 **N** means the number of grids. (number of grid ponits is **N + 1**)
 
-**Ntime** is used for control the frequency for print out the theory solution for comparison every **Ntime** steps. But, the code in BB has a problem :
-```
-      if(mod(it,NTime).eq.0) then
-```
-This NTime has a wrong "T", as the input is "N**t**ime".
+**Ntime** is used for control the frequency for print out the theory solution for comparison every **Ntime** steps. 
 
-**dt** is the time step for the 
+**dt** is the **time step** for the explicit Euler integration. 
+
+**u0** is the **maxximum verlocity** in the steady case, whitch should be the steady verlocity at **y = 0**.
+
+**al** is the half width of the channel.
+
+**anu** is the **kinematic viscosity $\nu$** of the fluid.
+
+#### (d)    Describe, in your own words, what are the output data of the code?
+
+there are two kinds of output in this code.
+
+1. Output all the parameters:
+```
+write(*,*) 'anu, dt, aL, dy, CFL=', anu, dt, aL, dy, CFL
+...
+write(*,*) 'Tend, dt, Ntime, nsteps=', Tend, dt, Ntime, nsteps
+```
+Except those constant parameters described at question(C), the other parameters are definded as :
+
+**dy** means the length of each unit grid.
+
+**CFL** decides the stability parameter for explicit Euler integration. In the code is :
+$$
+CFL = \frac{\nu \Delta t}{\Delta y^2}
+$$
+
+In this 1-D flow, CFL should smaller than 0.5.
+
+**Tend** is shown as :
 
 
 
