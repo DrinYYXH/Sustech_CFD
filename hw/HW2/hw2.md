@@ -53,7 +53,7 @@ real*8,parameter       :: u0=1.0d0, aL=1.0d0, anu=0.1
 
 **dt** is the **time step** for the explicit Euler integration. 
 
-**u0** is the **maxximum verlocity** in the steady case, whitch should be the steady verlocity at **y = 0**.
+**u0** is the **maxximum velocity** in the steady case, whitch should be the steady velocity at **y = 0**.
 
 **al** is the half width of the channel.
 
@@ -80,9 +80,35 @@ $$
 
 In this 1-D flow, CFL should smaller than 0.5.
 
-**Tend** is shown as :
+**Tend** is shown as : 
+$$
+Tend = \frac{3  (aL)^{2}}{\nu}
+$$
+
+It is 3 times the viscous diffusion time scale(in order to reach the steady state), and **Tend** decides how long the simulation is.(physical time)
+
+And **nstep** is : 
+$$
+nstep = \frac{Tend}{dt}
+$$
+
+Eventually **nstep** is the loop time steps.(Iteration time)
 
 
+2. Output the calculation results and compare with the real results:
+```
+         write(55,100)ycc,theory1,u(j)/u0,abs(u(j)-theory1)/theory1
+         ...
+         100     format(2x, 4f16.12)
+```
+This code asks computer to write the results in a file named "fort.55".
+
+The 4 numbers are :
+
+**ycc:** the coordinate of the data points.
+**theory1:** the theoretical solution at **ycc** point.
+**u(j)/u0:** the numerical solution at **ycc** point.(non-dim velocity)
+**abs(u(j)-theory1)/theory1:** the error between the theoretical solution and numerical solution.
 
 
 
