@@ -2,12 +2,12 @@ Program main
 implicit none
 ! on wall implementation, center difference
 ! Euler time integration
-!integer,parameter     :: N=90, Ntime=1024
-!real*8,parameter      ::  dt = 0.002d0
-!integer,parameter     :: N=40, Ntime=256
-!real*8,parameter      ::  dt = 0.008d0
-integer,parameter      :: N=8, Ntime=64
-real*8,parameter       ::  dt = 0.032d0
+!integer,parameter     :: N=32, Ntime=32
+!real*8,parameter      ::  dt = 0.0125d0
+!integer,parameter     :: N=16, Ntime=8
+!real*8,parameter      ::  dt = 0.05d0
+integer,parameter      :: N=8, Ntime=2
+real*8,parameter       ::  dt = 0.2d0
 
 real*8,parameter       :: u0=1.0d0, aL=1.0d0, anu=0.1
 ! u0 maximum velocity,aL channel half width,anu kinematic viscosity
@@ -15,7 +15,7 @@ real*8,parameter       :: u0=1.0d0, aL=1.0d0, anu=0.1
 !real*8, dimension(1:N+1) :: uold, u, uana  [uana is not used, can be removed.]
 real*8, dimension(1:N+1) :: uold, u
 real*8                   ::theta0, theta1, theory1,ss,ycc,CFL
-integer                  :: j,it,nsteps,k
+integer                  :: j,it,nsteps,k,output_count
 real*8                   :: dy,pi,t,Tend
 
    pi = 4.0d0*atan(1.0d0)
@@ -27,7 +27,7 @@ real*8                   :: dy,pi,t,Tend
 
    write(*,*) 'anu, dt, aL, dy, CFL=', anu, dt, aL, dy, CFL
    t = 0.d0
-   Tend = 3.0d0*aL*aL/anu
+   Tend = 5.1d0*aL*aL/anu
    nsteps = Tend / dt
    write(*,*) 'Tend, dt, Ntime, nsteps=', Tend, dt, Ntime, nsteps
 
@@ -42,10 +42,11 @@ real*8                   :: dy,pi,t,Tend
          uold(j) = u(j)
       enddo
 
-      t = t +dt
+      t = t + dt
 ! print out solutions
       if(mod(it,Ntime).eq.0) then
 ! analytical solution with the same N
+         output_count = output_count + 1
 ! assume N is even
          do j = 1,N+1
             ycc = real(j-1)*dy - 1.0d0
@@ -58,12 +59,12 @@ real*8                   :: dy,pi,t,Tend
             theory1 = theory1 - theta1
             end do
 
-         write(55,100)ycc,theory1,u(j)/u0,abs(u(j)-theory1)/theory1
+         write(8,100) REAL(output_count),ycc,theory1,u(j)/u0,abs(u(j)-theory1)/theory1
          end do
 !!!!!!!!!!
       end if
 
-100     format(2x, 4f16.12)
+100     format(2x, 5f16.12)
    
    enddo
 end program
