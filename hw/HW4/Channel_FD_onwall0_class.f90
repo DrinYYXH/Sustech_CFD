@@ -6,14 +6,14 @@ implicit none
 !real*8,parameter      ::  dt = 0.0125d0
 !integer,parameter     :: N=16, Ntime=8
 !real*8,parameter      ::  dt = 0.05d0
-integer,parameter      :: N=8, Ntime=2
+integer,parameter      :: N=8, Ntime=1
 
 real*8,parameter       :: u0=1.0d0, aL=1.0d0, anu=0.1, CFL = 0.32
 ! u0 maximum velocity,aL channel half width,anu kinematic viscosity
 ! body force is then  g = 2*nu*u0/al^2
 !real*8, dimension(1:N+1) :: uold, u, uana  [uana is not used, can be removed.]
 real*8, dimension(1:N+1) :: uold, u
-real*8                   ::theta0, theta1, theta2,theory1,theory2,theory3,ss,sss,ycc,anu_m,tt,dt
+real*8                   ::theta0, theta1,theta2,theta3,theory1,theory2,theory3,ss,sss,ycc,anu_m,tt,dt
 integer                  :: j,it,nsteps,k,output_count
 real*8                   :: dy,pi,t,Tend
 
@@ -26,8 +26,8 @@ real*8                   :: dy,pi,t,Tend
 
    write(*,*) 'anu, dt, aL, dy, CFL=', anu, dt, aL, dy, CFL
    t = 0.d0
-   Tend = 10.1d0*aL*aL/anu
-   nsteps = Tend / dt
+   Tend =  0.01*aL*aL/anu
+   nsteps = int(Tend / dt) + 1
    write(*,*) 'Tend, dt, Ntime, nsteps=', Tend, dt, Ntime, nsteps
 
    do it=1, nsteps
@@ -53,7 +53,7 @@ real*8                   :: dy,pi,t,Tend
             theory2 = (1.d0- ycc**2.d0)    
             theory3 = (1.d0- ycc**2.d0)        
 ! I used 100 terms
-            do k =0,100
+            do k =0,5
             ss = (0.5d0+real(k))*pi ! beta_k
 
             sss = 2.d0 * ss / real(N)
@@ -65,19 +65,29 @@ real*8                   :: dy,pi,t,Tend
             
             theta1 =theta0 *exp(-ss*ss*anu*t)*cos(ss*ycc)
             theta2 =theta0 *exp(-ss*ss*anu_m*t)*cos(ss*ycc)
+            theta3 = theta0 * (1.d0 - 2.d0*CFL + 2.d0*CFL*cos(ss*dy))**it * cos(ss*ycc)
             
             theory1 = theory1 - theta1
             theory2 = theory2 - theta2
+            theory3 = theory3 - theta3
             end do
-! Write down the solution at y =0
+
             tt = anu * (it * dt) / (aL**2)
+
+! Write down the solution at y =0.5L
+            if(abs(ycc - 0.5d0*aL) < 1.d-6) then
+               write(1,100) tt, u(j), theory3
+            end if
+
+! Write down the solution at y =0
+
             if(abs(ycc) < 1.d-8 .and. tt - 2.0d0 < 0.001d0) then
                !write(2,100) REAL(output_count),ycc,tt,abs(theory2-theory1)/u0,abs(u(j)-theory1)/u0
-               write(1,*) REAL(output_count),ycc,tt,u(j)
+               !write(1,*) REAL(output_count),ycc,tt,u(j)
             end if
 
             if (abs(tt - 0.2d0) < 0.001d0 .or. abs(tt - 10.0d0) < 0.001d0) then
-               write(32,100) REAL(output_count),ycc,tt,abs(theory2-theory1)/u0,abs(u(j)-theory1)/u0
+               !write(32,100) REAL(output_count),ycc,tt,abs(theory2-theory1)/u0,abs(u(j)-theory1)/u0
             end if
 
             !write(1,100) REAL(output_count),ycc,REAL(it),abs(theory1-u(j))/u0,abs(theory2-u(j))/u0
