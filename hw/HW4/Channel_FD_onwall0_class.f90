@@ -8,7 +8,7 @@ implicit none
 !real*8,parameter      ::  dt = 0.05d0
 integer,parameter      :: N=8, Ntime=1
 
-real*8,parameter       :: u0=1.0d0, aL=1.0d0, anu=0.1, CFL = 0.32
+real*8,parameter       :: u0=1.0d0, aL=1.0d0, anu=0.1, CFL = 0.53
 ! u0 maximum velocity,aL channel half width,anu kinematic viscosity
 ! body force is then  g = 2*nu*u0/al^2
 !real*8, dimension(1:N+1) :: uold, u, uana  [uana is not used, can be removed.]
@@ -26,7 +26,7 @@ real*8                   :: dy,pi,t,Tend
 
    write(*,*) 'anu, dt, aL, dy, CFL=', anu, dt, aL, dy, CFL
    t = 0.d0
-   Tend =  0.01*aL*aL/anu
+   Tend =  5.1d0*aL*aL/anu
    nsteps = int(Tend / dt) + 1
    write(*,*) 'Tend, dt, Ntime, nsteps=', Tend, dt, Ntime, nsteps
 
@@ -53,7 +53,7 @@ real*8                   :: dy,pi,t,Tend
             theory2 = (1.d0- ycc**2.d0)    
             theory3 = (1.d0- ycc**2.d0)        
 ! I used 100 terms
-            do k =0,5
+            do k =0,100
             ss = (0.5d0+real(k))*pi ! beta_k
 
             sss = 2.d0 * ss / real(N)
@@ -77,6 +77,13 @@ real*8                   :: dy,pi,t,Tend
 ! Write down the solution at y =0.5L
             if(abs(ycc - 0.5d0*aL) < 1.d-6) then
                write(1,100) tt, u(j), theory3
+            end if
+
+            if(abs(ycc - 0.5d0*aL) < 1.d-6) then
+               write(2,100) tt, &
+                  (u(j)-theory3)/u0, &
+                  (theory1-theory3)/u0, &
+                  (theory2-theory3)/u0
             end if
 
 ! Write down the solution at y =0
