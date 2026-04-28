@@ -43,7 +43,7 @@ time_list = []
 Tmax = 4.0
 
 while t < Tmax:
-    u = step_B(u)
+    u = step(u)
     t += dt
 
     u_exact = exact(x, t)
