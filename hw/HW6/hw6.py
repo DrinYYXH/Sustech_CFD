@@ -5,7 +5,7 @@ N = 160
 L = 2.0
 dx = L / N
 a = 1.0
-C = 2.5
+C = 0.5
 dt = C * dx / a
 
 x = np.linspace(0, L, N, endpoint=False)
@@ -40,7 +40,7 @@ L1_list = []
 L2_list = []
 time_list = []
 
-Tmax = 4.0
+Tmax = 4000.0
 
 while t < Tmax:
     u = step(u)
@@ -60,7 +60,7 @@ while t < Tmax:
 plt.figure()
 plt.plot(time_list, L1_list, label="L1")
 plt.plot(time_list, L2_list, label="L2")
-plt.yscale('log')
+
 plt.xlabel("Time")
 plt.ylabel("Errors")
 plt.legend()
