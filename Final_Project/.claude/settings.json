@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where pdftotext *)",
+      "Bash(python3 -c \"import PyPDF2; print\\('PyPDF2 available'\\)\")",
+      "Bash(python -c \"import PyPDF2; print\\('PyPDF2 available'\\)\")",
+      "Bash(python3 -c \"import fitz; print\\('PyMuPDF available'\\)\")",
+      "Bash(python -c \"import fitz; print\\('PyMuPDF available'\\)\")",
+      "Bash(pdftotext -layout \"e:/个人/CFD/Final_Project/Computer_Project.pdf\" -)",
+      "Bash(gfortran --version)",
+      "Bash(gfortran -O3 -Wall -o linear_advection.exe linear_advection.f90)",
+      "Bash(./linear_advection.exe)",
+      "Bash(python3 -c \"import matplotlib; print\\('matplotlib ok'\\)\")",
+      "Bash(python -c \"import matplotlib; print\\('matplotlib ok'\\)\")",
+      "Bash(python plot_results.py)",
+      "Bash(git -C \"e:\\\\个人\\\\CFD\\\\Final_Project\" log --oneline -10)",
+      "Bash(gfortran -O2 -Wall schemes_mod.f90 convergence_study.f90 -o convergence_study.exe)",
+      "Bash(gfortran -O2 -Wall schemes_mod.f90 stability_study.f90 -o stability_study.exe)",
+      "Bash(gfortran -O2 -Wall schemes_mod.f90 adaptive_lw.f90 -o adaptive_lw.exe)",
+      "Bash(gfortran -c schemes_mod.f90)",
+      "Bash(gfortran -c convergence_study.f90)",
+      "Bash(gfortran schemes_mod.o convergence_study.o -o convergence_study.exe)"
+    ]
+  }
+}
