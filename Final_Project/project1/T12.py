@@ -5,7 +5,7 @@ import os
 # =================================================================
 # 1. 基础配置与学术级画布规范
 # =================================================================
-BASE_DIR = "/home/u12310744/hw/project1/"
+BASE_DIR = "."
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.size'] = 11
@@ -75,7 +75,7 @@ ax.grid(True, linestyle=':', alpha=0.5)
 ax.legend(loc='upper left', edgecolor='black', framealpha=0.9)
 plt.tight_layout()
 plt.savefig(os.path.join(BASE_DIR, 'solution_comparison_t2.png'), dpi=300)
-plt.show()
+plt.close(fig)
 
 # =================================================================
 # 3. 绘图二：t = 8.0 (流场剖面图)
@@ -99,7 +99,7 @@ ax.grid(True, linestyle=':', alpha=0.5)
 ax.legend(loc='upper left', edgecolor='black', framealpha=0.9)
 plt.tight_layout()
 plt.savefig(os.path.join(BASE_DIR, 'solution_comparison_t8.png'), dpi=300)
-plt.show()
+plt.close(fig)
 
 # =================================================================
 # 4. 绘图三：TV Evolution (全变差演化图，拓宽坐标轴记录发散)
@@ -124,6 +124,6 @@ ax.grid(True, linestyle=':', alpha=0.5)
 ax.legend(loc='upper right', edgecolor='black')
 plt.tight_layout()
 plt.savefig(os.path.join(BASE_DIR, 'tv_evolution_comparison.png'), dpi=300)
-plt.show()
+plt.close(fig)
 
 print(">>> [成功] 无量纲高品相学术图表已全部重新生成完毕！")

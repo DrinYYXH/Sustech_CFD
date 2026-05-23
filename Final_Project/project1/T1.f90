@@ -41,7 +41,7 @@ program linear_advection_project
     
     ! 根据传入参数动态分配流场数组内存
     allocate(u(0:N+1), u_new(0:N+1))
-    allocate(x(1:N), sigma(1:N))
+    allocate(x(1:N), sigma(0:N+1))
     
     ! 根据选择的格式以及网格数动态构建文件名 (防止多网格运行时数据文件互相覆盖)
     select case(scheme_type)
@@ -95,7 +95,9 @@ program linear_advection_project
         
         ! 2. 计算细胞斜率 sigma
         call compute_slopes(u, sigma, N, dx, scheme_type)
-        
+        sigma(0)   = sigma(N)
+        sigma(N+1) = sigma(1)
+
         ! 3. 有限体积主格式核心推进
         do i = 1, N
             u_new(i) = u(i) - (a * dt / dx) * (u(i) - u(i-1)) &
@@ -163,7 +165,7 @@ contains
         integer, intent(in) :: N, stype
         double precision, intent(in) :: dx
         double precision, dimension(0:N+1), intent(in) :: u
-        double precision, dimension(1:N), intent(out) :: sigma
+        double precision, dimension(0:N+1), intent(out) :: sigma
         
         integer :: j
         double precision :: s1, s2, sig_L, sig_R
