@@ -1,7 +1,9 @@
 !==============================================================================
 ! Task 4: Numerical Stability Study
 ! Run with CFL = 0.5, 0.8, 1.0, 1.05, 1.1 on smooth IC sin(pi*x)
-! Track max|u| vs time to detect instability
+! Track L1 norm vs time to detect instability
+!   L1 = (1/N) * sum_i |u_i|
+!   For sin(pi*x) exact solution: L1 = 2/pi ≈ 0.6366 (constant in time)
 !==============================================================================
 
 program stability_study
@@ -18,7 +20,7 @@ program stability_study
   real(8), parameter :: blowup = 1.0d10
 
   integer :: cidx, step, nsteps, output_every, i
-  real(8) :: cfl, dt, nu, t, umax
+  real(8) :: cfl, dt, nu, t, l1norm
   real(8) :: x(N), u0(N), u(N), u_new(N), delta(N)
 
   do i = 1, N
@@ -26,8 +28,8 @@ program stability_study
   end do
   u0 = sin(3.141592653589793d0 * x)
 
-  open(10, file='stability_maxval.dat', status='replace')
-  write(10, '(a)') '# CFL  scheme  time  max|u|'
+  open(10, file='stability_l1.dat', status='replace')
+  write(10, '(a)') '# CFL  scheme  time  L1'
 
   do cidx = 1, num_cfl
     cfl = cfl_vals(cidx)
@@ -43,10 +45,10 @@ program stability_study
     u = u0; t = 0.0d0
     do step = 0, nsteps
       if (mod(step, output_every) == 0) then
-        umax = maxval(abs(u))
-        write(10, '(f5.2,3x,a3,f12.6,es16.6)') cfl, 'LW ', t, umax
-        if (umax > blowup .or. umax /= umax) then
-          write(*, '(a)') '  LW:  UNSTABLE at t=', t
+        l1norm = sum(abs(u)) / N
+        write(10, '(f5.2,3x,a3,f12.6,es16.6)') cfl, 'LW ', t, l1norm
+        if (l1norm > blowup .or. l1norm /= l1norm) then
+          write(*, '(a,f8.2)') '  LW:  UNSTABLE at t=', t
           exit
         end if
       end if
@@ -60,10 +62,10 @@ program stability_study
     u = u0; t = 0.0d0
     do step = 0, nsteps
       if (mod(step, output_every) == 0) then
-        umax = maxval(abs(u))
-        write(10, '(f5.2,3x,a3,f12.6,es16.6)') cfl, 'VL ', t, umax
-        if (umax > blowup .or. umax /= umax) then
-          write(*, '(a)') '  VL:  UNSTABLE at t=', t
+        l1norm = sum(abs(u)) / N
+        write(10, '(f5.2,3x,a3,f12.6,es16.6)') cfl, 'VL ', t, l1norm
+        if (l1norm > blowup .or. l1norm /= l1norm) then
+          write(*, '(a,f8.2)') '  VL:  UNSTABLE at t=', t
           exit
         end if
       end if
@@ -77,10 +79,10 @@ program stability_study
     u = u0; t = 0.0d0
     do step = 0, nsteps
       if (mod(step, output_every) == 0) then
-        umax = maxval(abs(u))
-        write(10, '(f5.2,3x,a3,f12.6,es16.6)') cfl, 'SB ', t, umax
-        if (umax > blowup .or. umax /= umax) then
-          write(*, '(a)') '  SB:  UNSTABLE at t=', t
+        l1norm = sum(abs(u)) / N
+        write(10, '(f5.2,3x,a3,f12.6,es16.6)') cfl, 'SB ', t, l1norm
+        if (l1norm > blowup .or. l1norm /= l1norm) then
+          write(*, '(a,f8.2)') '  SB:  UNSTABLE at t=', t
           exit
         end if
       end if
@@ -93,7 +95,7 @@ program stability_study
   end do
 
   close(10)
-  print *, 'Stability data written to stability_maxval.dat'
+  print *, 'Stability data written to stability_l1.dat'
 
 contains
   include 'schemes.inc'
