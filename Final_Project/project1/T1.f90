@@ -10,10 +10,10 @@ program linear_advection_project
     
     double precision, parameter :: L = 2.0d0    ! 物理域总长度 [-1, 1]
     double precision, parameter :: a = 1.0d0    ! 平流速度
-    double precision, parameter :: cfl = 0.5d0  ! 设定的 CFL 数
+    double precision, parameter :: cfl = 1.05d0  ! Python动态修改
     
     ! =================================================================
-    ! 动态可分配数组声明 (解决 N 变化带来的数组大小问题)
+    ! 动态可分配数组声明 (完美解决 N 变化带来的数组大小问题)
     ! =================================================================
     double precision, allocatable, dimension(:) :: x, sigma
     double precision, allocatable, dimension(:) :: u, u_new
@@ -25,11 +25,11 @@ program linear_advection_project
     logical :: saved_t2
     character(len=40) :: filename_t2, filename_t8, filename_tv
     
-    ! 检查命令行参数个数
+    ! 检查命令行参数个数 (去掉了会引起编译报错的英文半角叹号)
     num_args = command_argument_count()
     if (num_args < 2) then
-        print *, "错误: 请提供运行参数! 格式: ./cfd_solver <N> <scheme_type>"
-        print *, "例如: ./cfd_solver 160 3"
+        print *, "Error: Please provide arguments. Usage: ./cfd_solver <N> <scheme_type>"
+        print *, "Example: ./cfd_solver 160 3"
         stop
     end if
     
@@ -41,9 +41,10 @@ program linear_advection_project
     
     ! 根据传入参数动态分配流场数组内存
     allocate(u(0:N+1), u_new(0:N+1))
-    allocate(x(1:N), sigma(0:N+1))
+    allocate(x(1:N))
+    allocate(sigma(0:N+1))  ! 【核心修复】将 sigma 同样扩展至包含幽灵单元 0 和 N+1
     
-    ! 根据选择的格式以及网格数动态构建文件名 (防止多网格运行时数据文件互相覆盖)
+    ! 根据选择的格式以及网格数动态构建文件名
     select case(scheme_type)
     case(1)
         write(filename_t2, '(A,I0,A)') 'lw_result_t2_N', N, '.txt'
@@ -58,7 +59,7 @@ program linear_advection_project
         write(filename_t8, '(A,I0,A)') 'superbee_result_t8_N', N, '.txt'
         write(filename_tv, '(A,I0,A)') 'superbee_tv_history_N', N, '.txt'
     case default
-        print *, "错误: 未知的 scheme_type!"
+        print *, "Error: Unknown scheme_type!"
         stop
     end select
     
@@ -78,7 +79,7 @@ program linear_advection_project
     t = 0.0d0
     saved_t2 = .false.
     
-    ! 打开历史记录文件（增加了一列 L1_Error 的输出通道）
+    ! 打开历史记录文件
     open(12, file=trim(filename_tv), status='replace')
     write(12, '(A20, A20, A20, A20)') "Time", "Total_Variation", "L2_Error", "L1_Error"
     
@@ -89,16 +90,14 @@ program linear_advection_project
     write(12, '(4F20.8)') t, tv_val, l2_err, l1_err
     
     do step = 1, total_steps
-        ! 1. 同步周期性边界条件
+        ! 1. 同步流场的周期性边界条件
         u(0)   = u(N)
         u(N+1) = u(1)
         
-        ! 2. 计算细胞斜率 sigma
+        ! 2. 计算细胞斜率 sigma (内部会自动同步 sigma 的幽灵单元)
         call compute_slopes(u, sigma, N, dx, scheme_type)
-        sigma(0)   = sigma(N)
-        sigma(N+1) = sigma(1)
-
-        ! 3. 有限体积主格式核心推进
+        
+        ! 3. 有限体积主格式核心推进 (此时 i=1 时读取 sigma(0) 已经是合法的周期性边界值)
         do i = 1, N
             u_new(i) = u(i) - (a * dt / dx) * (u(i) - u(i-1)) &
                        - (a * dt / (2.0d0 * dx)) * (dx - a * dt) * (sigma(i) - sigma(i-1))
@@ -123,7 +122,7 @@ program linear_advection_project
             close(10)
             saved_t2 = .true.
             
-            ! 【关键配合】在 t=2.0 时，把计算结果以标准格式打印到终端，供 Python 全自动抓取收集
+            ! 打印供 Python 全自动抓取收集的标志
             print *, "RESULTS_T2:", scheme_type, N, l1_err, l2_err
         end if
     end do
@@ -165,11 +164,12 @@ contains
         integer, intent(in) :: N, stype
         double precision, intent(in) :: dx
         double precision, dimension(0:N+1), intent(in) :: u
-        double precision, dimension(0:N+1), intent(out) :: sigma
+        double precision, dimension(0:N+1), intent(out) :: sigma ! 【核心修复】扩展为 0:N+1
         
         integer :: j
         double precision :: s1, s2, sig_L, sig_R
         
+        ! 1. 计算内部单元网格的物理斜率
         do j = 1, N
             s1 = (u(j+1) - u(j)) / dx
             s2 = (u(j) - u(j-1)) / dx
@@ -189,6 +189,11 @@ contains
                 sigma(j) = maxmod(sig_L, sig_R)
             end select
         end do
+
+        ! 2. 【核心修复】在这里强行同步斜率数组的周期性边界条件！
+        sigma(0)   = sigma(N)
+        sigma(N+1) = sigma(1)
+        
     end subroutine compute_slopes
 
     ! --- 函数：minmod 算子 ---
@@ -252,7 +257,7 @@ contains
         calc_tv = calc_tv + abs(u_arr(1) - u_arr(N))
     end function calc_tv
 
-    ! --- 函数：计算当前流场的 L2 全域空间数值误差 ---
+    ! --- 函数：计算当前流场的 L2 空间数值误差 ---
     double precision function calc_l2_error(x_arr, u_arr, N, t_val)
         integer, intent(in) :: N
         double precision, intent(in) :: t_val
@@ -268,7 +273,7 @@ contains
         calc_l2_error = sqrt(sum_sq / dble(N))
     end function calc_l2_error
 
-    ! --- 函数：新增：计算当前流场的 L1 全域空间数值误差 ---
+    ! --- 函数：计算当前流场的 L1 空间数值误差 ---
     double precision function calc_l1_error(x_arr, u_arr, N, t_val)
         integer, intent(in) :: N
         double precision, intent(in) :: t_val
