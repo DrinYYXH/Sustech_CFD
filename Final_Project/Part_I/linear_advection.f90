@@ -31,11 +31,11 @@ program linear_advection
   real(8) :: x(N), u0(N), u(N), u_new(N)
   real(8) :: delta(N)
   real(8) :: t, nu
-  integer :: i, step, nsteps1, nsteps2, tv_skip, tv_count
-  character(len=10) :: scheme_name
+  integer :: i, step, nsteps1, nsteps2, tv_skip
+  real(8) :: tv
 
   ! --- Output files ---
-  integer, parameter :: f_lw = 10, f_vl = 11, f_sb = 12, f_tv = 13
+  integer, parameter :: f_lw = 10, f_vl = 11, f_sb = 12
 
   ! Derived parameters
   nu = cfl
@@ -55,20 +55,19 @@ program linear_advection
     end if
   end do
 
-  ! Open TV output file
-  open(f_tv, file='total_variation.dat', status='replace')
-  write(f_tv, '(a)') '# time  TV_LW  TV_VL  TV_SB'
+  ! Open TV output file (will be merged from temp files)
+  tv_skip = max(1, nsteps2 / 500)
 
   !=========================================================================
-  ! Run all three schemes
+  ! Run all three schemes with inline TV tracking
   !=========================================================================
 
   ! ---- Scheme 1: Lax-Wendroff ----
-  scheme_name = 'LW'
   u = u0
   t = 0.0d0
-  tv_count = 0
-  tv_skip = max(1, nsteps2 / 500)   ! save ~500 TV points
+  open(20, file='tv_lw_temp.dat', status='replace')
+  call total_variation(N, u, tv)
+  write(20, '(f12.6,f16.10)') 0.0d0, tv
 
   do step = 1, nsteps2
     call compute_delta_lw(N, u, delta)
@@ -76,8 +75,9 @@ program linear_advection
     u = u_new
     t = t + dt
 
-    if (mod(step, tv_skip) == 0 .or. step == nsteps2) then
-      tv_count = tv_count + 1
+    if (mod(step, tv_skip) == 0) then
+      call total_variation(N, u, tv)
+      write(20, '(f12.6,f16.10)') t, tv
     end if
 
     if (step == nsteps1) then
@@ -85,14 +85,14 @@ program linear_advection
     end if
   end do
   call write_solution(f_lw, 'lax_wendroff_t8.dat', N, x, u, u0, t)
-
-  ! Compute TV for this scheme and store temporarily
-  ! TV computed separately in write_tv_history
+  close(20)
 
   ! ---- Scheme 2: van Leer ----
-  scheme_name = 'VL'
   u = u0
   t = 0.0d0
+  open(21, file='tv_vl_temp.dat', status='replace')
+  call total_variation(N, u, tv)
+  write(21, '(f12.6,f16.10)') 0.0d0, tv
 
   do step = 1, nsteps2
     call compute_delta_vl(N, u, delta)
@@ -100,16 +100,24 @@ program linear_advection
     u = u_new
     t = t + dt
 
+    if (mod(step, tv_skip) == 0) then
+      call total_variation(N, u, tv)
+      write(21, '(f12.6,f16.10)') t, tv
+    end if
+
     if (step == nsteps1) then
       call write_solution(f_vl, 'van_leer_t2.dat', N, x, u, u0, t)
     end if
   end do
   call write_solution(f_vl, 'van_leer_t8.dat', N, x, u, u0, t)
+  close(21)
 
   ! ---- Scheme 3: SUPERBEE ----
-  scheme_name = 'SB'
   u = u0
   t = 0.0d0
+  open(22, file='tv_sb_temp.dat', status='replace')
+  call total_variation(N, u, tv)
+  write(22, '(f12.6,f16.10)') 0.0d0, tv
 
   do step = 1, nsteps2
     call compute_delta_sb(N, u, delta)
@@ -117,16 +125,22 @@ program linear_advection
     u = u_new
     t = t + dt
 
+    if (mod(step, tv_skip) == 0) then
+      call total_variation(N, u, tv)
+      write(22, '(f12.6,f16.10)') t, tv
+    end if
+
     if (step == nsteps1) then
       call write_solution(f_sb, 'superbee_t2.dat', N, x, u, u0, t)
     end if
   end do
   call write_solution(f_sb, 'superbee_t8.dat', N, x, u, u0, t)
+  close(22)
 
   !=========================================================================
-  ! Compute and write TV history
+  ! Merge TV temp files into total_variation.dat
   !=========================================================================
-  call write_tv_history(N, nu, u0, dt, nsteps2)
+  call merge_tv_files()
 
   print *, 'Done. Output files:'
   print *, '  lax_wendroff_t2.dat, lax_wendroff_t8.dat'
@@ -257,70 +271,6 @@ contains
     end do
     close(unit)
   end subroutine write_solution
-
-  !===========================================================================
-  ! Write TV history for all three schemes
-  !===========================================================================
-  subroutine write_tv_history(N, nu, u0, dt, nsteps)
-    integer, intent(in) :: N, nsteps
-    real(8), intent(in) :: nu, u0(N), dt
-    real(8) :: u(N), delta(N), u_new(N), t, tv
-    integer :: step, tv_skip
-
-    tv_skip = max(1, nsteps / 500)
-
-    ! --- Lax-Wendroff ---
-    u = u0
-    t = 0.0d0
-    open(20, file='tv_lw_temp.dat', status='replace')
-    do step = 0, nsteps
-      if (mod(step, tv_skip) == 0) then
-        call total_variation(N, u, tv)
-        write(20, '(f12.6,f16.10)') t, tv
-      end if
-      call compute_delta_lw(N, u, delta)
-      call advance(N, nu, u, delta, u_new)
-      u = u_new
-      t = t + dt
-    end do
-    close(20)
-
-    ! --- van Leer ---
-    u = u0
-    t = 0.0d0
-    open(21, file='tv_vl_temp.dat', status='replace')
-    do step = 0, nsteps
-      if (mod(step, tv_skip) == 0) then
-        call total_variation(N, u, tv)
-        write(21, '(f12.6,f16.10)') t, tv
-      end if
-      call compute_delta_vl(N, u, delta)
-      call advance(N, nu, u, delta, u_new)
-      u = u_new
-      t = t + dt
-    end do
-    close(21)
-
-    ! --- SUPERBEE ---
-    u = u0
-    t = 0.0d0
-    open(22, file='tv_sb_temp.dat', status='replace')
-    do step = 0, nsteps
-      if (mod(step, tv_skip) == 0) then
-        call total_variation(N, u, tv)
-        write(22, '(f12.6,f16.10)') t, tv
-      end if
-      call compute_delta_sb(N, u, delta)
-      call advance(N, nu, u, delta, u_new)
-      u = u_new
-      t = t + dt
-    end do
-    close(22)
-
-    ! --- Merge into single file ---
-    call merge_tv_files()
-
-  end subroutine write_tv_history
 
   !===========================================================================
   ! Compute total variation
