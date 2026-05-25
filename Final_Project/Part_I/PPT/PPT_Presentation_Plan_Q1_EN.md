@@ -1,23 +1,40 @@
-# Part I Q1 Presentation Plan — Three Schemes: Implementation & Solution Comparison
+# Part I Presentation Plan — 1D Linear Advection Equation (All 5 Tasks)
 
 **MAE5005 / MAE403 CFD Final Project, Spring 2026**
 
 ---
 
-## Slide Structure Overview (8 slides recommended)
+## Slide Structure Overview (16 slides recommended)
+
+### Part A: Q1 — Three Schemes: Implementation & Comparison (Slides 1–8, ~10 min)
 
 | Slide | Title | Content Type | Suggested Time |
 |:---:|------|:---:|:---:|
 | 1 | Title Slide | Title + info | 0.5 min |
 | 2 | Problem Statement | Equation + IC + parameters | 1 min |
-| 3 | Numerical Method: Cell-wise Reconstruction Form | Formula + three δ definitions | 1.5 min |
-| 4 | Results: Solution Comparison at t=2.0 | Figure + key observations | 1 min |
-| 5 | Results: Solution Comparison at t=8.0 | Figure + key observations | 0.5 min |
+| 3 | Numerical Method | Formula + three δ definitions + equivalence | 1.5 min |
+| 4 | Results: t=2.0 Solution Comparison | Figure + key observations | 1 min |
+| 5 | Results: t=8.0 Solution Comparison | Figure + key observations | 0.5 min |
 | 6 | TV Analysis & Scheme Assessment | TV plot + table + mechanism | 2 min |
-| 7 | Physical Explanation: Why Does LW Oscillate? | Dispersion vs. dissipation + Godunov | 2 min |
-| 8 | Summary | Comparison table + one-line conclusion | 1 min |
+| 7 | Physical Explanation: Oscillation vs. Non-Monotonicity | Two-column mechanism analysis + Godunov | 2 min |
+| 8 | Part A Summary | Comparison table + one-line conclusion | 1 min |
 
-**Total duration: ~9–10 minutes**
+### Part B: Tasks 3–5 — Accuracy, Stability & Improvement (Slides 9–16, ~8 min)
+
+| Slide | Title | Content Type | Suggested Time |
+|:---:|------|:---:|:---:|
+| 9 | Task 3: Accuracy Order — Theory & Method | Modified equation + piecewise c-parameter framework | 1.5 min |
+| 10 | Task 3: Accuracy Order — Numerical Results | Convergence plots + slope table + Godunov | 1.5 min |
+| 10b | Supplement: Square-Wave Convergence Degradation | Why slope ≈ 1 + sin(πx) contrast | 1 min |
+| 11 | Task 4: Numerical Stability — Theory | von Neumann + TVD + piecewise c-parameter analysis | 2 min |
+| 11b | Supplement: Piecewise von Neumann Intuition | Sweby diagram + c-branch stability (optional) | 0.5 min |
+| 12 | Task 4: Numerical Stability — Numerical Results | L₁ semi-log plot + blowup table + 3-stage analysis | 1.5 min |
+| 13 | Task 5: Adaptive LW — Method | Shock sensor θ_j + algorithm | 1 min |
+| 14 | Task 5: Adaptive LW — Results | 4-scheme comparison + TV plot | 1 min |
+| 15 | Overall Summary | Unified conclusions across all 5 tasks | 0.5 min |
+| 16 | Backup Slides | Sweby diagram, derivations, flow chart, etc. | — |
+
+**Total duration: ~17–18 minutes** (compressible to 15 with Q&A buffer)
 
 ---
 
@@ -84,33 +101,41 @@ $$u(x,0) = \begin{cases} 1.0, & -0.5 < x < 0.5 \\ 0.0, & \text{otherwise} \end{c
 
 ---
 
-### Slide 3: Numerical Method — Cell-wise Reconstruction Form
+### Slide 3: Numerical Method
 
-**Layout:** Large formula at the top, three-column comparison table below
+**Layout:** Left: formulas; Right: three-column scheme table; Bottom: format equivalence
 
-**Core formula (centered, boxed):**
+**Top — Implemented Form (cell-wise reconstruction, Project Eq. 3):**
 
 $$\boxed{u_j^{n+1} = u_j^n - \nu\left(u_j^n - u_{j-1}^n\right) - \frac{\nu(1-\nu)}{2}\left(\delta_j - \delta_{j-1}\right)}, \quad \nu = \frac{a\Delta t}{\Delta x}$$
 
-**Formula structure (color-coded):**
-- <span style="color:blue">$-\nu(u_j^n - u_{j-1}^n)$</span>: first-order upwind flux (ensures basic transport)
-- <span style="color:red">$-\frac{\nu(1-\nu)}{2}(\delta_j - \delta_{j-1})$</span>: anti-diffusion correction (raises accuracy to second order)
-- <span style="color:green">$\delta_j$</span>: slope term — **the only difference between the three schemes**
+where $\delta_j$ is the limited slope in cell $j$.
 
-**Three schemes (three columns side-by-side):**
+**Formula structure:**
+- $-\nu(u_j^n - u_{j-1}^n)$: first-order upwind flux
+- $-\frac{\nu(1-\nu)}{2}(\delta_j - \delta_{j-1})$: anti-diffusion correction
+- $\delta_j$: slope — **the only difference between the three schemes**
+
+**Three schemes (three columns):**
 
 | | Lax-Wendroff | van Leer | SUPERBEE |
 |---|:---:|:---:|:---:|
 | $\delta_j=$ | $u_{j+1}-u_j$ | $\phi_{\text{VL}}(r_j)(u_{j+1}-u_j)$ | $\phi_{\text{SB}}(r_j)(u_{j+1}-u_j)$ |
-| $\phi(r)=$ | 1 (no limiter) | $\dfrac{r+|r|}{1+|r|}$ | $\max(0,\min(2r,1),\min(r,2))$ |
+| $\phi(r)=$ | 1 (no limiter) | $\dfrac{r+\vert r\vert}{1+\vert r\vert}$ | $\max(0,\min(2r,1),\min(r,2))$ |
 | Nature | Linear, 2nd-order | Nonlinear, TVD | Nonlinear, TVD (sharpest) |
 
-where $r_j = \dfrac{u_j - u_{j-1}}{u_{j+1} - u_j}$ (local slope ratio)
+where $r_j = \dfrac{u_j - u_{j-1}}{u_{j+1} - u_j}$
 
-**Figure suggestion:** Place a small Sweby diagram in the bottom-right corner, marking the VL and SB regions.
+**Bottom — Equivalence to Class Format:**
+
+> The format taught in class is the **conservative flux form**: $u_j^{n+1} = u_j^n - \frac{\Delta t}{\Delta x}(F_{j+1/2} - F_{j-1/2})$, with $F_{j+1/2} = a u_j + \frac{a}{2}(1-\nu)\delta_j$. Substituting the flux definition directly yields the cell-wise form above. The two forms are **mathematically identical**.
+
+**Figure:** See `ppt_format_equivalence.png` (generated by `plot_ppt_figures.py`) — shows the derivation from flux form to cell-wise form.
 
 **Speaker notes:**
-- All three schemes share the same update formula (Eq. 3) — only the $\delta_j$ computation differs, showing systematic scheme design
+- The flux form (taught in class) and the cell-wise form (used in this project) are the same formula — substitute and simplify
+- We chose the cell-wise form for implementation because it is more compact (single line, no intermediate flux array), but the two forms are fully interchangeable
+- All three schemes share the same update formula — only the $\delta_j$ computation differs
 - Limiters compress slopes near discontinuities (ensuring monotonicity) while recovering second-order accuracy in smooth regions
 - LW is the special case with no limiter ($\phi \equiv 1$) — this is precisely why it oscillates
 
@@ -190,50 +215,224 @@ $$\text{TV}(u) = \sum_i |u_{i+1} - u_i| \quad\text{(periodic domain includes wra
 
 ---
 
-### Slide 7: Physical Explanation — Why Does LW Oscillate?
+### Slide 7: LW's Two Defects — Oscillation vs. Non-Monotonicity
 
 **This is the core slide demonstrating depth of understanding. Allocate ~2 minutes.**
 
-**Layout:** Three-layer progressive structure
+**Layout:** Two-column structure, each explaining one independent mechanism
 
-**Layer 1 — Taylor Expansion → Modified Equation (upper-left):**
+---
 
-Taylor-expand the LW scheme, eliminate time derivatives using the PDE to obtain the modified equation:
+**Left Column — Mechanism 1: Oscillation (Gibbs Phenomenon)**
+
+**Root cause: dispersion-dominated modified equation**
+
+Taylor-expand LW, eliminate time derivatives using the PDE:
 
 $$\frac{\partial u}{\partial t} + a\frac{\partial u}{\partial x} = \underbrace{-\frac{a\Delta x^2}{6}(1-\nu^2)}_{\text{dispersion coefficient}} \frac{\partial^3 u}{\partial x^3} + \mathcal{O}(\Delta x^3)$$
 
-- Leading error: **third-order dispersive term** $\partial^3 u/\partial x^3$ (odd order)
-- **No** $\partial^2 u/\partial x^2$ term — LW cleverly cancels the second-order dissipative term to achieve second-order accuracy
-- Dispersion → different wavenumber components travel at different speeds → high-frequency components pile up near discontinuities → **$2\Delta x$-wavelength oscillations**
+- Leading error is **third-order dispersive** $\partial^3 u/\partial x^3$ (odd order)
+- Different wavenumbers travel at different phase speeds → high-frequency components pile up near discontinuities
+- Manifests as **$2\Delta x$-wavelength sawtooth wiggles** near discontinuities
+- Contrast: 1st-order upwind has $\partial^2 u/\partial x^2$ dissipation (smooths, no wiggles)
 
-**Layer 2 — Contrast with First-Order Upwind (upper-right):**
+> **Dispersion → shape of oscillation (wiggles), but does not directly create new extrema.**
 
-$$\frac{\partial u}{\partial t} + a\frac{\partial u}{\partial x} = \underbrace{\frac{a\Delta x}{2}(1-\nu)}_{\text{positive dissipation coefficient}} \frac{\partial^2 u}{\partial x^2} + \mathcal{O}(\Delta x^2)$$
+---
 
-- Leading error: **second-order dissipative term** $\partial^2 u/\partial x^2$ (even order)
-- Positive dissipation → smears discontinuities, but no oscillations
-- Price: first-order accuracy $\mathcal{O}(\Delta x)$
+**Right Column — Mechanism 2: Non-Monotonicity (New Extrema)**
 
-**Layer 3 — Godunov's Theorem Resolution (bottom box):**
+**Root cause: negative coefficients in the linear scheme stencil**
 
-> **Godunov's Theorem (1959): A monotone linear scheme is at most first-order accurate.**
+One LW step is a weighted combination of the three stencil points:
+
+$$u_j^{n+1} = \underbrace{\frac{\nu(1+\nu)}{2}}_{\text{upwind weight }>0}u_{j-1}^n + \underbrace{(1-\nu^2)}_{\geq 0}u_j^n \underbrace{- \frac{\nu(1-\nu)}{2}}_{\text{downwind weight }<0}u_{j+1}^n$$
+
+**The three weights sum to 1:** $\frac{\nu(1+\nu)}{2} + (1-\nu^2) - \frac{\nu(1-\nu)}{2} \equiv 1$ (a necessary condition for any conservative scheme, verified by direct substitution). **But this is not a "weighted average" — a weighted average requires all weights ≥0, and the downwind weight is strictly negative.**
+
+**What is a negative coefficient?**
+
+For $\nu \in (0,1)$, the downwind weight is always $-\frac{\nu(1-\nu)}{2} < 0$. Physical meaning: the anti-diffusion correction $\frac{\nu(1-\nu)}{2}(\delta_j - \delta_{j-1})$ over-compensates — it not only cancels the first-order upwind dissipation but also applies an opposing contribution to the downwind direction, effectively "subtracting" a portion of $u_{j+1}$.
+
+**Numerical example ($\nu = 0.8$, weights: $0.72, 0.36, -0.08$):**
+
+| $[u_{j-1}, u_j, u_{j+1}]$ | $u_j^{n+1}$ = | Result | Problem |
+|------|------|:---:|------|
+| $[0, 0, 1]$ | $0.72\cdot 0 + 0.36\cdot 0 - 0.08\cdot 1$ | **−0.08** | Negative undershoot — all inputs ≥0, output <0 |
+| $[1, 1, 0]$ | $0.72\cdot 1 + 0.36\cdot 1 - 0.08\cdot 0$ | **1.08** | Positive overshoot — all inputs ≤1, output >1 |
+
+In both examples all inputs lie in $[0,1]$, yet the output exceeds this range — **new extrema are created in a single time step**.
+
+**Why do negative coefficients necessarily create new extrema? — Convex vs. Non-Convex Combinations**
+
+- Weights sum to 1 = **consistency** (satisfied by all conservative schemes)
+- All weights ≥0 = **monotonicity** (satisfied only by first-order schemes — Godunov's theorem)
+- **Convex combination** = sum 1 + all weights ≥0 → output $\in [\min(\text{inputs}), \max(\text{inputs})]$ → monotonicity-preserving
+- LW: sum = 1 ✓, but downwind weight < 0 ✗ → **non-convex combination** → output can fall below all inputs or rise above all inputs
+
+**Contrast with first-order upwind ($\delta_j = 0$):**
+
+$$u_j^{n+1} = \nu \cdot u_{j-1}^n + (1-\nu) \cdot u_j^n$$
+
+Both coefficients ≥0 and sum to 1 → **strict convex combination** → guaranteed monotone. Price: truncation error $\mathcal{O}(\Delta x)$.
+
+> **Godunov's Theorem (1959): A monotone (extremum-preserving) linear scheme is at most first-order accurate.**
 >
-> LW is **linear** + **second-order** → necessarily **non-monotone** (oscillates).
-> van Leer / SUPERBEE are **nonlinear** ($\phi$ depends on $r_j$ → depends on the solution itself) → can be **second-order** + **monotone**.
+> LW is **linear** + **2nd-order** → negative coefficients are structurally unavoidable (otherwise $\mathcal{O}(\Delta x)$ dissipation cannot be cancelled) → **necessarily non-monotone** (creates new extrema that propagate into oscillations).
+
+---
+
+**Generalization: The General Case with Limiter ($\phi(r) = c$)**
+
+Substituting $\delta_j = c \cdot (u_{j+1} - u_j)$ into the unified update formula yields the **c-parameterized three-coefficient stencil**:
+
+$$\boxed{u_j^{n+1} = \underbrace{\frac{\nu(2 - c + c\nu)}{2}}_{w_{-1}(c)} u_{j-1}^n \;+\; \underbrace{\big[1 - \nu + c\nu - c\nu^2\big]}_{w_0(c)} u_j^n \;-\; \underbrace{\frac{c\nu(1-\nu)}{2}}_{w_{+1}(c)} u_{j+1}^n}$$
+
+**Verification:** $w_{-1} + w_0 + w_{+1} \equiv 1$ (holds for any $c$ — conservation is invariant).
+
+**Figure:** See `ppt_weight_signs.png` (4-panel, $c \in [-0.5, 3.5]$, RdBu diverging colormap). First three panels show $w_{-1}$, $w_0$, $w_{+1}$ as continuous values (blue = negative, red = positive, white = zero, black solid = zero contour). The fourth panel shows $\min(w_{-1}, w_0, w_{+1})$ — the "most negative weight" at each $(c,\nu)$. Blue region = at least one negative weight (non-convex); white/red region = all three ≥0 (convex). Clearly visible: for $\nu < 1$, the convex region is confined to the narrow band $c \leq 0$.
+
+**Three-coefficient behavior by $c$ ($\nu = 0.8$):**
+
+| $c$ | $w_{-1}$ (upwind) | $w_0$ (center) | $w_{+1}$ (downwind) | Sum | Convex? | Scheme |
+|:---:|:---:|:---:|:---:|:---:|:---:|------|
+| 0 | 0.80 | 0.20 | 0.00 | 1 | ✓ | 1st-order upwind |
+| 0.5 | 0.76 | 0.28 | −0.04 | 1 | ✗ | Weak anti-diffusion |
+| 1.0 | 0.72 | 0.36 | −0.08 | 1 | ✗ | LW |
+| 1.5 | 0.68 | 0.44 | −0.12 | 1 | ✗ | Strong anti-diffusion |
+| 2.0 | 0.64 | 0.52 | −0.16 | 1 | ✗ | SB upper bound |
+
+**The Key — $w_{+1}(c)$ is the algebraic key to understanding limiters:**
+
+$$w_{+1}(c) = -\frac{c\nu(1-\nu)}{2}$$
+
+- The only potentially negative coefficient ($w_{-1} \geq 0$ and $w_0 \geq 0$ always hold for $\nu \leq 1$)
+- **Larger $c$ → larger $|w_{+1}|$** → more aggressive anti-diffusion → higher risk of exceeding $[u_{\min}, u_{\max}]$
+- $c = 0$ → $w_{+1} = 0$ → reverts to first-order upwind, restores convex combination, strictly monotone
+- **The essence of a limiter: dynamically choose $c$ at each cell so that the negative effect of $w_{+1}$ is constrained within safe bounds by the TVD condition**
+
+This directly explains all limiter behavior:
+- VL/SB push $c \to 0$ near discontinuities → shut off $w_{+1}$ negativity → restore local monotonicity
+- SUPERBEE takes the largest $c$ (near 2) in the Sweby region → maximizes $|w_{+1}|$ → strongest anti-diffusion → sharpest discontinuities
+- The TVD constraint in algebraic terms: ensures new extrema injected by $w_{+1} < 0$ are not amplified step by step
+
+**Follow-up: If any $c \leq 0$ makes all three weights non-negative, why not just pick $c < 0$ to eliminate oscillations?**
+
+This fails on the accuracy side. Recall the piecewise modified equation's dissipation coefficient:
+
+$$D(c) = \frac{a\Delta x}{2}(1-\nu)(1-c)$$
+
+| $c$ | $D(c)$ | Dissipation Level | Accuracy |
+|:---:|------|:---:|:---:|
+| $c < 0$ | $> \frac{a\Delta x}{2}(1-\nu)$ | **Excessive dissipation** | Worse than 1st-order |
+| $c = 0$ | $\frac{a\Delta x}{2}(1-\nu)$ | 1st-order upwind level | $\mathcal{O}(\Delta x)$ |
+| $c = 1$ | 0 | Zero dissipation | $\mathcal{O}(\Delta x^2)$ |
+
+- $c < 0$: all weights positive → monotone ✓. But $D(c)$ exceeds even first-order upwind → **excessive dissipation，accuracy worse than first-order** — the solution is over-smoothed
+- $c = 0$: all weights positive + minimal dissipation → the **optimal accuracy achievable by any linear monotone scheme** (Godunov's theorem restated: the maximum order of a linear monotone scheme is first)
+- $c > 0$ (e.g. LW's $c = 1$): $D(c)$ drops → accuracy improves, but $w_{+1}$ becomes negative → non-monotone
+
+**The fundamental trade-off: monotonicity and accuracy are mutually exclusive along the $c$-axis.**
+
+```
+c < 0          c = 0          0 < c < 1        c = 1          c > 1
+  ← over-damped   optimal monotone  under-damped    zero dissipation  anti-diffusion
+  ← all ≥0        all ≥0           w_{+1}<0        w_{+1}<0          w_{+1}<0
+  ← <1st-order    =1st-order       ~1st-order       =2nd-order       ~1st-order
+```
+
+**The purpose of limiters:** not to pick one fixed global $c$, but to **adaptively select $c$ at each cell** — $c \approx 1$ (2nd-order) in smooth regions, $c \approx 0$ (monotone) near discontinuities. **Nonlinearity is the only path to obtaining the best of both regimes.**
+
+---
+
+**From Weight Analysis to Limiter Design — a natural derivation chain:**
+
+Recall the downwind weight $w_{+1}(c) = -\frac{c\nu(1-\nu)}{2}$. When $u_{j+1}$ is large (a discontinuity approaches), the negative weight multiplies a large value → $u_j^{n+1}$ is pulled strongly downward → undershoot. **Modulation strategy: make $c$ adaptive to the local flow —**
+
+$$c_j = \phi(r_j), \quad r_j = \frac{u_j - u_{j-1}}{u_{j+1} - u_j}$$
+
+**Physical intuition for $r_j$:**
+
+| $r_j$ | Flow Regime | Desired $c$ | Reason |
+|:---:|------|:---:|------|
+| $r_j < 0$ | Local extremum (sawtooth) | $c = 0$ | $u_{j+1}$ and $u_{j-1}$ have opposite signs — $w_{+1}$'s negative effect is most dangerous, must be fully shut off |
+| $r_j \approx 1$ | Smooth monotone (3 cells collinear) | $c = 1$ | $u_{j+1}$ is consistent with neighbors — $w_{+1}$'s negative value won't cause surprises, safe to use LW 2nd-order |
+| $r_j \to \infty$ | Steep gradient ($u_{j+1} \approx u_j$) | $c \to 2$ | $u_{j+1}-u_j \approx 0$ → $w_{+1} \approx 0$ is automatically safe, can increase $c$ to sharpen gradients |
+
+**Figure:** See `ppt_r_sensor.png` — three-row plot showing $u(x)$, $r_j$ (log scale), and the adaptive $c_j = 1-\theta_j$ along $x$ for the square-wave IC. $r_j \to \pm\infty$ at discontinuities and is undefined (0/0) in constant regions; in contrast, $c_j$ via the curvature sensor automatically drops to ≈0 at jumps and recovers to ≈1 in smooth regions, with no ratio-related ill-conditioning.
+
+**This $c_j = \phi(r_j)$ is precisely the limiter function.** The constraints on $\phi(r)$ emerge naturally:
+
+$$\boxed{\phi(r) = 0 \;\; (r \leq 0), \qquad \phi(1) = 1, \qquad 0 \leq \phi(r) \leq 2, \qquad 0 \leq \frac{\phi(r)}{r} \leq 2}$$
+
+First: shut off anti-diffusion at extrema ($c=0$). Second: recover LW in smooth regions ($c=1$). Last two: TVD constraints (Sweby region). van Leer and SUPERBEE are two specific instances satisfying these constraints — differing only in how they transition from smooth regions to extrema (gentle vs. aggressive).
+
+> **From the $w_{+1}(c)$ negative-weight problem → the need to restrain $c$ → the local slope ratio $r_j$ as a sensor → design constraints on $\phi(r)$ → the concrete VL/SB formulas. The limiter is no longer an arbitrary "black-box fix" — it emerges as an inevitable construction from both algebraic and physical considerations.**
+
+---
+
+**Alternative path: auto-adaptive $c$ via solution curvature, without $r_j$**
+
+The VL/SB sensor $r_j = (u_j-u_{j-1})/(u_{j+1}-u_j)$ has two inherent issues: (1) numerically ill-conditioned when the denominator nears zero; (2) $r_j$ is a ratio — its physical meaning is indirect.
+
+**Alternative — a curvature-based sensor:**
+
+Define a direct measure of local solution "smoothness" that does not rely on ratios:
+
+$$\theta_j = \frac{|u_{j+1} - 2u_j + u_{j-1}|}{|u_{j+1} - u_j| + |u_j - u_{j-1}| + \varepsilon_0}$$
+
+where $\varepsilon_0$ is a small parameter (e.g., $10^{-12}$), used only to prevent division by zero.
+
+- **Numerator** $|u_{j+1} - 2u_j + u_{j-1}|$: second difference → measures local curvature → large near discontinuities, → 0 in smooth regions
+- **Denominator**: sum of first differences → normalization, ensures $\theta_j \in [0, 1]$
+- **$\varepsilon_0$**: pure numerical safeguard, does not affect the physical meaning of $\theta_j$
+
+**Adaptive $c_j$:**
+
+$$c_j = 1 - \theta_j$$
+
+| Region | $\theta_j$ | $c_j$ | $w_{+1}(c_j) = -\frac{c_j\nu(1-\nu)}{2}$ | Effect |
+|------|:---:|:---:|------|------|
+| Smooth | $\to 0$ | $\to 1$ | $-\frac{\nu(1-\nu)}{2}$ (LW negative weight) | 2nd-order; $u_{j+1}$ consistent with neighbors, negative weight causes no surprises |
+| Near discontinuity | $\to 1$ | $\to 0$ | $0$ | Auto-reverts to 1st-order upwind; $w_{+1}$ vanishes, convex combination restored |
+| Transition | $\in (0,1)$ | $\in (0,1)$ | Between the two | Smooth transition, no hard switching |
+
+**Fundamental difference from VL/SB limiters:**
+
+| | VL / SB Limiter | Curvature Sensor (ALW-type) |
+|---|:---:|:---:|
+| **Sensor** | $r_j = \frac{u_j-u_{j-1}}{u_{j+1}-u_j}$ (ratio) | $\theta_j$ (second difference, absolute) |
+| **Numerical stability** | $r_j$ unbounded when $u_{j+1} \approx u_j$ | $\theta_j$ always $\in [0,1]$, unconditionally bounded |
+| **Design logic** | Sweby region constraint → TVD | Direct curvature measurement → high curvature = need dissipation |
+| **Recovery of $c=1$** | $r_j=1 \Rightarrow \phi=1$ (3 cells collinear) | $\theta_j=0 \Rightarrow c=1$ (zero curvature) |
+| **Parameters** | No free parameters | Only one safeguard $\varepsilon_0$, physically negligible |
+
+**Advantage of this approach:** No need to construct a $\phi(r)$ function family, no Sweby diagram, no TVD proof — start from the $w_{+1}(c) < 0$ problem, use local curvature to directly judge "will the negative weight cause trouble here?", and adaptively attenuate $c$. This is the design philosophy behind the **Adaptive LW** scheme in Task 5 of this project.
+
+---
+
+**Distinguishing the Two Mechanisms:**
+
+| | Oscillation | Non-Monotonicity |
+|---|---|---|
+| **Root cause** | Dispersion term $\partial^3 u/\partial x^3$ in modified equation | Negative coefficients in stencil |
+| **Manifestation** | $2\Delta x$ sawtooth near discontinuities | Solution exceeds $[u_{\min}, u_{\max}]$ |
+| **Analysis method** | Taylor expansion → modified equation | Godunov's theorem / Harten TVD theory |
+| **How VL/SB fix it** | Reduce to 1st-order upwind near discontinuities (local dissipation) | Nonlinear limiter → TVD → automatically monotone |
 
 **Transition chain:**
 ```
-First-order upwind (dissipative, 1st-order, monotone)
-       ↓  add anti-diffusion correction
-LW (zero dissipation, 2nd-order, non-monotone → oscillates)
-       ↓  add nonlinear limiter
-van Leer / SUPERBEE (local dissipation, 2nd-order in smooth regions, monotone)
+1st-order upwind (dissipative ∂², 1st-order, monotone — all coefficients positive)
+       ↓  add anti-diffusion (cancel dissipation, raise accuracy)
+LW (dispersive ∂³, 2nd-order, non-monotone — negative coefficients appear)
+       ↓  add nonlinear limiter (locally suppress the negative-coefficient effect)
+van Leer / SUPERBEE (adaptive dissipation, 2nd-order in smooth regions, TVD monotone)
 ```
 
 **Speaker notes:**
-- This is the theoretical core of Part I — use Taylor expansion to explain LW's oscillations, and Godunov's theorem to explain why limiters are necessary
-- The modified equation derivations are shown in the homework answer document; the PPT only presents conclusions
-- Key insight: even-order derivatives = dissipation (smoothing), odd-order derivatives = dispersion (oscillation). LW has only odd-order error.
+- Emphasize the independence: LW can create new extrema even at smooth peaks (non-monotonicity), while dispersive oscillations mainly appear near discontinuities
+- Even-order derivatives = dissipation (smoothing), odd-order = dispersion (oscillation). LW has only odd-order error → oscillates without dissipating
+- Godunov's core insight: linear + 2nd-order → coefficients must contain negatives → non-monotone. This is structural — no parameter tuning can fix it.
 
 ---
 
@@ -246,20 +445,374 @@ van Leer / SUPERBEE (local dissipation, 2nd-order in smooth regions, monotone)
 | | Lax-Wendroff | van Leer | SUPERBEE |
 |---|:---:|:---:|:---:|
 | Accuracy | 2nd-order (global) | 2nd-order (smooth) / 1st-order (extrema) | 2nd-order (smooth) / 1st-order (extrema) |
-| Monotonicity | ✗ (Gibbs oscillations) | ✓ | ✓ |
-| TVD | ✗ | ✓ | ✓ |
+| Oscillation (dispersion) | ✗ ($2\Delta x$ sawtooth) | ✓ none | ✓ none |
+| Monotonicity (extremum-preserving) | ✗ (negative coeffs.) | ✓ (TVD) | ✓ (TVD) |
 | Discontinuity Resolution | Oscillatory | ~7 cells | **~5 cells (sharpest)** |
-| Limiter Smoothness | — | Smooth ($C^1$) | Piecewise (kinks at $r=1/2, 2$) |
-| Dominant Error | Dispersion ($\partial^3 u/\partial x^3$) | Local dissipation ($r \neq 1$) | Local dissipation + anti-diffusion ($r>1$) |
+| Stencil Coefficients | Contains negatives | All positive (limiter) | All positive (limiter) |
+| Dominant Error | Dispersion $\partial^3 u/\partial x^3$ | Local dissipation | Local dissipation + anti-diffusion |
 | Best Use Case | Smooth solutions | General-purpose, robust | Sharpest discontinuities needed |
 
 **Bottom conclusion (bold box):**
 
-> **A purely linear second-order scheme cannot simultaneously achieve high accuracy and oscillation-free behavior. The key to overcoming Godunov's theorem is using nonlinear limiters — retaining second-order accuracy in smooth regions while locally reducing to first-order dissipation near discontinuities.**
+> **LW's two defects are independent: dispersion error produces $2\Delta x$ oscillatory shape; negative stencil coefficients violate monotonicity (create new extrema). Nonlinear limiters solve both — reducing to first-order upwind near discontinuities eliminates dispersive wiggles, while the TVD property ensures monotonicity.**
 
 **Speaker notes:**
 - Three schemes differ only in δ within the same framework, yet their behavior diverges dramatically — this is the elegance of numerical methods
 - There is no "best" scheme: LW is optimal for smooth solutions, van Leer is the most robust, SUPERBEE gives the sharpest discontinuities
+
+---
+
+### Slide 9: Task 3 — Accuracy Order · Theory & Method
+
+**Layout:** Top: LW modified equation derivation; Bottom: VL/SB piecewise analysis framework
+
+---
+
+**Top — LW Modified Equation (3-step derivation):**
+
+**Step 1 — Taylor expand** $u_j^{n+1}, u_{j\pm1}^n$ about $(x_j, t^n)$ to $\mathcal{O}(\Delta x^3, \Delta t^3)$.
+
+**Step 2 — Eliminate time derivatives** using the PDE: $u_t = -au_x \;\Rightarrow\; u_{tt} = a^2u_{xx},\; u_{ttt} = -a^3u_{xxx}$.
+
+**Step 3 — Assemble the modified equation:**
+
+$$\boxed{\frac{\partial u}{\partial t} + a\frac{\partial u}{\partial x} = -\frac{a\Delta x^2}{6}(1-\nu^2)\frac{\partial^3 u}{\partial x^3} + \mathcal{O}(\Delta x^3)}$$
+
+→ Truncation error $\tau_{\text{LW}} \sim \mathcal{O}(\Delta x^2)$: **LW is second-order.** Leading error is third-order dispersion (odd order) — no $\partial^2 u/\partial x^2$ dissipation term.
+
+**Contrast — 1st-order upwind (limiter at extrema):**
+
+$$\boxed{\frac{\partial u}{\partial t} + a\frac{\partial u}{\partial x} = \frac{a\Delta x}{2}(1-\nu)\frac{\partial^2 u}{\partial x^2} + \mathcal{O}(\Delta x^2)}$$
+
+→ Truncation error $\sim \mathcal{O}(\Delta x)$: **first-order.** Leading error is second-order dissipation (even order, positive coefficient → smoothing, no oscillation).
+
+---
+
+**Bottom — VL/SB Piecewise Modified Equation (key theoretical framework):**
+
+Nonlinear limiters → no global Taylor expansion. Freeze $\phi(r)=c$ as constant, $\delta_j = c(u_{j+1}-u_j)$ reduces to a **generalized modified equation parameterized by $c$**:
+
+$$\boxed{\frac{\partial u}{\partial t} + a\frac{\partial u}{\partial x} = \underbrace{\frac{a\Delta x}{2}(1-\nu)(1-c)}_{\text{dissipation coefficient } D(c)} \frac{\partial^2 u}{\partial x^2} \;-\; \frac{a\Delta x^2}{6}(1-\nu^2)\frac{\partial^3 u}{\partial x^3} + \mathcal{O}(\Delta x^3)}$$
+
+**Key observations:**
+- Dissipation $D(c) = \frac{a\Delta x}{2}(1-\nu)(1-c)$ — **depends on limiter output $c$**
+- Dispersion $-\frac{a\Delta x^2}{6}(1-\nu^2)u_{xxx}$ — **independent of $c$, always present**
+
+| Flow Regime | $c$ | $D(c)$ | Local Order | Physical Behavior |
+|------|:---:|------|:---:|------|
+| Extrema ($r \leq 0$) | 0 | $\frac{a\Delta x}{2}(1-\nu) > 0$ | **1st** | Positive dissipation (diffusion), suppresses oscillation |
+| Smooth monotone ($r \approx 1$) | 1 | 0 | **2nd** | Pure dispersion, equivalent to LW |
+| SB compressive ($r > 1$) | 1–2 | **negative** | 1st | **Anti-diffusion** (sharpens gradients), steepest discontinuities |
+
+> **Key insight:** $c=1$ is the **attractor** for smooth solutions — as the grid refines, $r \to 1$, and the vast majority of cells operate at $c \approx 1$ (2nd-order). The L∞ order loss comes solely from the tiny fraction of cells at extrema where $c \to 0$.
+
+---
+
+### Slide 10: Task 3 — Accuracy Order · Numerical Results
+
+**Layout:** Left: L1+L∞ convergence plots; Right: table + Godunov connection
+
+**Figures:** `convergence_l1.png` and `convergence_linf.png`
+
+---
+
+**Numerical Verification — Grid Refinement:**
+
+Smooth IC $\sin(\pi x)$, CFL=0.8, t=1.0, N = 20, 40, 80, 160, 320.
+
+| Scheme | L₁ Order | L∞ Order | Theoretical Prediction |
+|--------|:---:|:---:|:---:|
+| Lax-Wendroff | **1.99** | **1.98** | $\mathcal{O}(\Delta x^2)$ global 2nd-order |
+| van Leer | **2.02** | 1.39 | Smooth: $\mathcal{O}(\Delta x^2)$, Extrema: $\mathcal{O}(\Delta x)$ |
+| SUPERBEE | **1.88** | 1.10 | Same as above |
+
+---
+
+**Why L₁ = 2nd-order but L∞ degrades? — Two norms, two perspectives:**
+
+| | L₁ Norm (global average) | L∞ Norm (worst local) |
+|---|------|------|
+| Affected by | Average error over all cells | Single worst cell |
+| Impact of extremum clipping | Negligible — extrema occupy ~0.01% of cells | Dominant — one clipped point governs the norm |
+| Measured result | ~2.0 (reflects smooth-region 2nd-order) | ~1.1–1.4 (reflects extremum 1st-order clipping) |
+
+**VL vs SB L∞ difference:**
+- VL limiter is $C^1$ smooth → $\phi \to 0$ transition at extrema is gentler → L∞ ≈ 1.39
+- SB limiter is piecewise → kinks at $r=1/2$ and $r=2$ → stiffer extremum clipping → L∞ ≈ 1.10
+
+---
+
+**Complete Godunov Picture:**
+
+| | LW | VL / SB |
+|---|:---:|:---:|
+| Scheme type | Linear | Nonlinear ($\phi$ depends on $r_j$ → depends on solution) |
+| Accuracy | Global 2nd-order | 2nd-order (smooth) / 1st-order (extrema) |
+| Monotonicity | ✗ | ✓ (TVD) |
+| Godunov's Theorem | Linear + 2nd-order → non-monotone | Nonlinear + TVD → 2nd-order + monotone possible |
+
+> **Core conclusion:** Extremum clipping is not a bug — it is the **necessary price** TVD schemes pay to overcome Godunov's theorem. The nonlinear limiter adapts $c$ to the local flow: where dissipation is needed ($c \to 0$), oscillations are suppressed; where the flow is smooth ($c \to 1$), second-order accuracy is recovered. The vast majority of cells operate at $c \to 1$ (L₁ = 2nd-order); only a tiny fraction at extrema drop to $c \to 0$ (L∞ degraded).
+
+**Speaker notes:**
+- The split between L₁ and L∞ is direct evidence of TVD schemes "paying for monotonicity"
+- The piecewise modified-equation framework elegantly explains every number in the table
+- Godunov's theorem not only states the impossibility — it precisely points to the solution: nonlinearity
+
+---
+
+### Slide 10b: Task 3 Supplement — Convergence Degradation with Square-Wave IC
+
+**Note:** Supplementary/contrast slide — can be skipped if time is tight, but strongly recommended to demonstrate depth of understanding.
+
+**Layout:** Top: square-wave convergence results (slope ≈ 1); Middle: explanation; Bottom: contrast with sin(πx).
+
+---
+
+**Phenomenon: L₁ / L₂ Convergence Rate ≈ 1 with Square-Wave IC**
+
+| IC | t | L₁ Slope | L₂ Slope |
+|------|:---:|:---:|:---:|
+| Square wave | 2.0 | ≈ 1.0 | ≈ 1.0 |
+| Square wave | 8.0 | ≈ 1.0 | ≈ 1.0 |
+
+All three schemes (LW, VL, SB) degrade to slope ≈ 1 with the square-wave IC — far from the theoretical second order.
+
+---
+
+**Why? The Solution Singularity Dominates the Error**
+
+The global error has two contributions:
+
+$$\text{Error} = \underbrace{\text{Error near discontinuity}}_{\text{governed by solution singularity}} + \underbrace{\text{Error in smooth regions}}_{\text{governed by scheme accuracy}}$$
+
+**(1) Discontinuity-neighborhood error — the dominant term:**
+
+- Numerical schemes smear the zero-thickness physical discontinuity into a finite transition zone (~5–7 cells)
+- Within this zone, each cell's error $\sim \mathcal{O}(1)$
+- The number of cells in the transition zone depends on the scheme's dissipation, not on $\Delta x$ (remains ~5–7 cells)
+- → Transition-zone error contribution $\sim (\text{constant}) \cdot \Delta x \propto \mathcal{O}(\Delta x)$
+
+**(2) Smooth-region error:**
+- In smooth regions the scheme is second-order → per-cell error $\sim \mathcal{O}(\Delta x^2)$
+- Smooth cells occupy ~99% of the domain
+- → Smooth-region error contribution $\sim \mathcal{O}(\Delta x^2)$
+
+**Global L₁ error dominant term:** $\Delta x^1 \gg \Delta x^2$ (for small $\Delta x$), therefore $\boxed{\text{convergence rate} \approx 1}$.
+
+---
+
+**Contrast: Why Does sin(πx) Recover Second Order?**
+
+| | Square-wave IC | sin(πx) IC |
+|---|:---:|:---:|
+| Solution regularity | $C^{-1}$ (discontinuous) | $C^\infty$ (smooth) |
+| Error dominated by | Discontinuity $\mathcal{O}(\Delta x^1)$ | Scheme truncation $\mathcal{O}(\Delta x^2)$ |
+| Can distinguish scheme order? | No — all ≈ 1 | Yes — LW ≈ 2.0, VL/SB L∞ ≈ 1.1–1.4 |
+
+> **Core conclusion:** The convergence degradation to slope ≈ 1 with the square wave is **not due to insufficient scheme accuracy** — it is the **solution singularity limiting** all schemes equally. This is precisely why Task 3 must use sin(πx): only when the solution is smoother than the scheme's truncation error can the measured convergence order reflect the scheme's true accuracy.
+
+**Speaker notes:**
+- The contrast between square-wave (slope ≈ 1) and sin(πx) (slope ≈ 2) powerfully validates the methodological principle that "smooth IC is a prerequisite for accuracy analysis"
+- This phenomenon is universal — all schemes (LW, VL, SB) are equally constrained by the solution's regularity
+
+---
+
+### Slide 11: Task 4 — Numerical Stability · Theory
+
+**Layout:** Top: LW von Neumann analysis; Bottom: VL/SB TVD + piecewise von Neumann with c-parameter
+
+---
+
+**Top — LW von Neumann Analysis:**
+
+Assume Fourier mode solution $u_j^n = e^{\sigma n \Delta t} e^{i k j \Delta x}$. One-step amplification:
+
+$$u_j^{n+1} = e^{\sigma \Delta t} u_j^n$$
+
+Substituting into the LW two-step form:
+
+$$|e^{\sigma\Delta t}|^2 = 1 - 4\nu^2(1-\nu^2)\sin^4\left(\frac{k\Delta x}{2}\right)$$
+
+- Stability requires $|e^{\sigma\Delta t}| \leq 1, \forall k$ → RHS second term must be non-negative → $\nu^2(1-\nu^2) \geq 0$ → **$\nu \leq 1$**
+- $\nu = 1$: $|e^{\sigma\Delta t}| = 1$, zero dissipation, zero dispersion, exact propagation
+- $\nu < 1$: $|e^{\sigma\Delta t}| < 1$ (for $k \neq 0$), scheme has numerical dissipation, but remains dispersive
+
+---
+
+**Bottom — VL/SB Stability: TVD Theory + Piecewise von Neumann**
+
+**(1) TVD Theory (Harten's Theorem):**
+
+Rewrite the scheme in Harten form:
+
+$$u_j^{n+1} = u_j^n - C_{j-1/2}(u_j^n - u_{j-1}^n) + D_{j+1/2}(u_{j+1}^n - u_j^n)$$
+
+When the limiter satisfies the Sweby constraint ($0 \leq \phi(r) \leq 2$, $0 \leq \phi(r)/r \leq 2$) and $\nu \leq 1$, the coefficients satisfy $C_{j-1/2} \geq 0$, $D_{j+1/2} \geq 0$, $C_{j-1/2} + D_{j+1/2} \leq 1$ → **scheme is TVD** → $L_\infty$ stable.
+
+**(2) Piecewise von Neumann Analysis (key theoretical framework):**
+
+Freeze the limiter as $\phi(r) = c$ ($0 \leq c \leq 2$), $\delta_j = c(u_{j+1}-u_j)$ — the scheme becomes linear. Set $u_j^n = e^{\sigma n\Delta t} e^{ikj\Delta x}$, let $s = \sin^2(k\Delta x/2) \in [0,1]$:
+
+$$\boxed{|e^{\sigma\Delta t}(c)|^2 = 1 - 4\nu(1-\nu)(1-c)\,s + 4\nu^2(1-\nu)[c^2(1-\nu) - 2c]\,s^2}$$
+
+**Local stability by flow regime:**
+
+| $c$ | Regime | $|e^{\sigma\Delta t}|^2$ | for $\nu \leq 1$ | Physical Meaning |
+|:---:|------|------|:---:|------|
+| 0 | Extrema (1st-order upwind) | $1 - 4\nu(1-\nu)s$ | stable ✓ | Strongest positive dissipation, all modes damped |
+| 1 | Smooth (LW) | $1 + 4\nu^2(\nu^2-1)s^2$ | stable ✓ | Dissipation vanishes — critical threshold |
+| 2 | SB compressive upper bound | $1 + 4\nu(1-\nu)s - 16\nu^3(1-\nu)s^2$ | **may > 1!** | Excessive anti-diffusion, locally unstable |
+
+**Figure:** See `ppt_stability_contour.png` (generated by `plot_ppt_figures.py`) — stability contour map in the $(c, \nu)$ plane. Horizontal axis: limiter output $c = \phi(r) \in [0, 2.5]$; vertical axis: CFL number $\nu \in [0, 1.5]$. The black solid line is the stability boundary $\max_s|e^{\sigma\Delta t}|^2 = 1$; red regions are unstable. Three key points are annotated: $c=0$ (upwind), $c=1$ (LW), $c=2$ (SB upper bound).
+
+**Key finding: $c = 2$ is unstable even at $\nu = 0.5$** (take $s = 0.5$: $|e^{\sigma\Delta t}|^2 = 1.25 > 1$).
+
+Yet the full SUPERBEE scheme is TVD for $\nu \leq 1$ and numerically stable. Why?
+
+> **Nonlinear coupling is necessary for stability:** The limiter is never globally frozen at $c=2$ — cells in the compressive regime ($c \to 2$) are always adjacent to dissipative cells ($c \to 0$) which act as a "buffer". The nonlinear cell-to-cell coupling preserves global TVD stability.
+
+**Godunov's Theorem in the frequency domain:**
+
+| | Globally frozen $\phi = c$ | Actual limiter scheme |
+|---|:---:|:---:|
+| Stability | Some $(c, \nu)$ combinations unstable | $\forall \nu \leq 1$: TVD → stable |
+| Essence | Purely linear | Nonlinear coupling with adaptive switching |
+
+**Speaker notes:**
+- $c=2$ is locally unstable but globally TVD-stable — the most intuitive evidence that "nonlinearity = overcoming Godunov"
+- Same stability bound ($\nu \leq 1$) for all three, but different foundations: LW = spectral radius, VL/SB = Harten TVD + nonlinear coupling
+
+---
+
+### Slide 11b: Task 4 — Piecewise von Neumann · Intuitive Picture (optional supplement)
+
+**Layout:** Simple Sweby diagram annotated with local stability of each c-branch
+
+**Core message (can be delivered verbally, no separate figure needed):**
+
+- $c = 0$ (1st-order upwind): strongly dissipative, stable — $D(c) = \frac{a\Delta x}{2}(1-\nu) > 0$
+- $c = 1$ (LW): dissipation exactly zero — second-order dispersive, von Neumann stable for $\nu \leq 1$
+- $c = 2$ (SB upper bound): excessive anti-diffusion — **unstable as a standalone linear scheme even for $\nu \leq 1$**
+- Actual limiter scheme = nonlinear coupling of all c-branches → global TVD constraint → "safe navigation" within the Sweby region
+
+---
+
+### Slide 12: Task 4 — Numerical Stability · Numerical Verification
+
+**Layout:** Left: `stability_l1.png`; Right: table + three-stage analysis
+
+**Method:** Smooth IC $\sin(\pi x)$, $N=80$, $t=10$, 5 CFL values (0.5, 0.8, 1.0, 1.05, 1.1). Track $L_1 = \frac{1}{N}\sum|u_i|$ (exact $L_1^{\text{exact}} = 2/\pi \approx 0.637$, conserved).
+
+| CFL | LW | van Leer | SUPERBEE |
+|:---:|:---:|:---:|:---:|
+| 0.50 | ✓ | ✓ | ✓ |
+| 0.80 | ✓ | ✓ | ✓ |
+| 1.00 | ✓ | ✓ | ✓ |
+| 1.05 | ✗ t≈8.7 | ✗ t≈9.0 | ✗ t≈8.8 |
+| 1.10 | ✗ t≈4.9 | ✗ t≈4.9 | ✗ t≈4.8 |
+
+**Three-Stage Instability Process (super-critical CFL):**
+
+$$\text{Stage I (apparent stability)} \;\to\; \text{Stage II (knee / deviation)} \;\to\; \text{Stage III (exponential growth line)}$$
+
+- **Stage I:** $L_1 \approx 0.637$ — round-off error ($\sim 10^{-16}$) seeds the $2\Delta x$ sawtooth mode which grows silently
+- **Stage II:** Sawtooth mode grows from $10^{-16}$ to detectable magnitude → $L_1$ deviates from 0.637
+- **Stage III:** $\log(L_1)$ linear in $t$ — exponential growth. Slope = time-domain effective growth rate
+
+**LW vs VL/SB Differences:**
+- LW knee is earlier (no limiter buffer), but VL/SB post-knee slope is steeper (limiter becomes "accelerator" after saturation)
+- VL/SB "apparent stability" lasts longer — limiters still erase sawtooth modes early in the super-critical regime → delayed blowup, consistent with Slide 11's piecewise von Neumann analysis ($c \to 0$ strong dissipation)
+
+**$10^{10}$ Threshold Limitation (brief):**
+- A single threshold conflates knee time and slope — two independent physical quantities. LW has earlier knee but VL/SB has steeper slope; all reach $10^{10}$ at similar times
+- $L_1$ deviating from $0.637$ by 10% ($L_1 > 0.7$) already indicates an unusable solution — $10^{10}$ gives the total collapse time, not the end of usability
+- Proper analysis separates: **(a) deviation onset time (knee)** and **(b) exponential-stage slope $\alpha$**
+
+**Speaker notes:**
+- All schemes stable for $\nu \leq 1$, divergent for $\nu > 1$ — consistent with theory
+- $L_1 = 2/\pi$ reference line enables earlier deviation detection than $\max|u|$ (which has no constant reference value)
+- Piecewise von Neumann (Slide 11): $c=2$ local instability explains why VL/SB post-knee slopes are steeper — once the limiter saturates, cells near $c \to 2$ destabilize first
+
+---
+
+### Slide 13: Task 5 — Adaptive Lax-Wendroff Improvement
+
+**Layout:** Algorithm idea (left), formulas (right)
+
+**Goal:** Retain LW's second-order accuracy in smooth regions while eliminating oscillations near discontinuities and preserving monotonicity.
+
+**Core Idea — Shock Sensor:**
+
+Define a local smoothness indicator $\theta_j$:
+
+$$\theta_j = \frac{|u_{j+1} - 2u_j + u_{j-1}|}{|u_{j+1} - u_j| + |u_j - u_{j-1}| + \varepsilon}$$
+
+- Numerator: second difference ← large near discontinuities, → 0 in smooth regions
+- Denominator: sum of first differences ← normalization factor
+
+$$\theta_j \to 1 \text{ (near discontinuity)} \qquad \theta_j \to 0 \text{ (smooth region)}$$
+
+**Adaptive Slope Construction:**
+
+$$\delta_j^{\text{ALW}} = (1 - \theta_j) \cdot (u_{j+1} - u_j)$$
+
+| Region | θ_j | δ_j | Equivalent Scheme |
+|--------|:---:|------|:---:|
+| Smooth | → 0 | → $u_{j+1}-u_j$ | Standard LW (2nd-order) |
+| Near discontinuity | → 1 | → 0 | 1st-order upwind (monotone) |
+| Transition | ∈ (0,1) | Adaptive blend | Between the two |
+
+**Difference from van Leer / SUPERBEE:** ALW does not need to compute $r_j$ or a limiter function $\phi(r)$ — the sensor $\theta_j$ directly uses local curvature of the solution.
+
+**Speaker notes:**
+- Physical intuition for $\theta_j$: large curvature at discontinuities → need dissipation; small curvature in smooth regions → can use second order
+- Different philosophy from VL/SB limiters: ALW is "detect-then-switch", VL/SB is "continuous nonlinear compression"
+
+---
+
+### Slide 14: Task 5 — Adaptive LW · Results
+
+**Layout:** Top: two solution comparison figures; Bottom: TV plot
+
+**Figures:** `adaptive_solution_t2.png`, `adaptive_zoom_t2.png`, `adaptive_tv.png`
+
+**Results Table:**
+
+| Scheme | min(u) @ t=8 | max(u) @ t=8 | TV @ t=8 | Monotone? |
+|--------|:---:|:---:|:---:|:---:|
+| LW (original) | −0.214 | 1.214 | 3.56 | ✗ |
+| van Leer | 0.000 | 1.000 | 2.00 | ✓ |
+| SUPERBEE | 0.000 | 1.000 | 2.00 | ✓ |
+| **ALW (improved)** | **0.000** | **1.000** | **2.00** | **✓** |
+
+**Key Observations:**
+- ALW completely eliminates LW oscillations (min=0, max=1 → strictly bounded)
+- TV = 2.00 invariant → ALW achieves **de facto TVD behavior** (without using a limiter function)
+- Retains LW second-order accuracy in smooth regions (sensor θ_j ≈ 0 → standard LW)
+- Near discontinuities, automatically reduces to upwind (θ_j ≈ 1 → δ_j ≈ 0)
+
+**Limitations (brief mention):** Sensor threshold has weak ε-dependence; less sensitive to very weak discontinuities than VL/SB.
+
+**Speaker notes:**
+- ALW achieves VL/SB-comparable results with ~30 lines of Fortran — sensor simplicity trades for computational efficiency
+- TV = 2.00 proves the scheme is effectively TVD — achieved through adaptive damping rather than a nonlinear limiter
+
+---
+
+### Slide 15: Overall Summary
+
+**Layout:** Unified conclusion table across all 5 tasks
+
+| Task | Core Question | Key Conclusion |
+|:---:|------|------|
+| 1–2 | Three-scheme comparison | LW: oscillatory but 2nd-order; VL/SB: TVD monotone, SB sharpest |
+| 3 | Accuracy order | LW: global 2nd-order (L∞≈2); VL/SB: L₁ 2nd-order only (L∞≈1.1–1.4) |
+| 4 | Stability condition | All three: ν ≤ 1; ν > 1 → exponential blowup, TVD does not change stability bound |
+| 5 | LW improvement | ALW sensor eliminates oscillations, TV=2.0 constant, 2nd-order in smooth regions |
+
+**Bottom-line conclusion:**
+
+> **Linear second-order schemes must oscillate (Godunov's Theorem). Two solution paths: nonlinear limiters (VL/SB) or adaptive sensors (ALW) — the core idea in both is locally reducing to first-order dissipation near discontinuities while preserving second-order accuracy in smooth regions.**
 
 ---
 
@@ -301,7 +854,18 @@ van Leer / SUPERBEE (local dissipation, 2nd-order in smooth regions, monotone)
 |:---:|------|------|
 | 2 | Square-wave IC schematic | [ppt_initial_condition.png](ppt_initial_condition.png) |
 | 2 | Parameter table | [ppt_parameter_table.png](ppt_parameter_table.png) |
+| 3 | Format equivalence derivation | [ppt_format_equivalence.png](ppt_format_equivalence.png) |
+| 7 | Three-weight continuous $(c,\nu)$ maps | [ppt_weight_signs.png](ppt_weight_signs.png) |
+| 7 | $r_j$ vs $x$ sensor comparison | [ppt_r_sensor.png](ppt_r_sensor.png) |
+| 11 | $(c,\nu)$ stability contour map | [ppt_stability_contour.png](ppt_stability_contour.png) |
 | 4 | Solution comparison at t=2.0 | [solution_t2.png](solution_t2.png) |
 | 5 | Solution comparison at t=8.0 | [solution_t8.png](solution_t8.png) |
 | 6 | TV time history | [total_variation.png](total_variation.png) |
+| 10 | Convergence plot (L₁) | [convergence_l1.png](convergence_l1.png) |
+| 10 | Convergence plot (L∞) | [convergence_linf.png](convergence_linf.png) |
+| 12 | Stability $L_1$ plot | [stability_l1.png](stability_l1.png) |
+| 14 | ALW solution (t=2.0) | [adaptive_solution_t2.png](adaptive_solution_t2.png) |
+| 14 | ALW zoom-in | [adaptive_zoom_t2.png](adaptive_zoom_t2.png) |
+| 14 | ALW TV comparison | [adaptive_tv.png](adaptive_tv.png) |
+| 16 | Code flow chart | [ppt_code_structure.png](ppt_code_structure.png) |
 | Backup B | Sweby diagram | Draw manually or extract from reference papers |
