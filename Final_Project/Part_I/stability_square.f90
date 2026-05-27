@@ -1,22 +1,19 @@
 !==============================================================================
-! Task 4: Numerical Stability Study
-! Run with CFL = 0.5, 0.8, 1.0, 1.05, 1.1 on smooth IC sin(pi*x)
+! Task 4 (Square Wave): Numerical Stability Study with square wave IC
 ! Track L1 norm vs time to detect instability
-!   L1 = (1/N) * sum_i |u_i|
-!   For sin(pi*x) exact solution: L1 = 2/pi ≈ 0.6366 (constant in time)
 !==============================================================================
 
-program stability_study
+program stability_square
   implicit none
 
-  integer, parameter :: N = 80
+  integer, parameter :: N = 160
   integer, parameter :: num_cfl = 5
   real(8), parameter :: cfl_vals(num_cfl) = (/ 0.5d0, 0.8d0, 1.0d0, 1.05d0, 1.1d0 /)
   real(8), parameter :: a = 1.0d0
   real(8), parameter :: xmin = -1.0d0, xmax = 1.0d0
   real(8), parameter :: Lx = xmax - xmin
   real(8), parameter :: dx = Lx / N
-  real(8), parameter :: t_end = 10.0d0
+  real(8), parameter :: t_end = 8.0d0
   real(8), parameter :: blowup = 5.0d0
 
   integer :: cidx, step, nsteps, output_every, i
@@ -26,9 +23,11 @@ program stability_study
   do i = 1, N
     x(i) = xmin + (i - 0.5d0) * dx
   end do
-  u0 = sin(3.141592653589793d0 * x)
+  ! Square wave IC
+  u0 = 0.0d0
+  where (x > -0.5d0 .and. x < 0.5d0) u0 = 1.0d0
 
-  open(10, file='stability_l1.dat', status='replace')
+  open(10, file='stability_square.dat', status='replace')
   write(10, '(a)') '# CFL  scheme  time  L1'
 
   do cidx = 1, num_cfl
@@ -95,8 +94,8 @@ program stability_study
   end do
 
   close(10)
-  print *, 'Stability data written to stability_l1.dat'
+  print *, 'Square-wave stability data written to stability_square.dat'
 
 contains
   include 'schemes.inc'
-end program stability_study
+end program stability_square
